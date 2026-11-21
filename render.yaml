@@ -1,0 +1,60 @@
+# Render Blueprint for Sure (free tier, web only).
+# NOTE: no Sidekiq worker is defined (background workers are paid on Render),
+# so background jobs (syncs, imports) are enqueued but not processed.
+# Free Postgres expires after 30 days; free web services sleep when idle
+# and have no persistent disk.
+databases:
+  - name: sure-db
+    plan: free
+    databaseName: sure_production
+    user: sure_user
+
+services:
+  - type: keyvalue
+    name: sure-redis
+    plan: free
+    ipAllowList: [] # internal connections only
+    maxmemoryPolicy: noeviction
+
+  - type: web
+    name: sure
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    envVars:
+      - key: SECRET_KEY_BASE
+        generateValue: true
+      - key: SELF_HOSTED
+        value: "true"
+      - key: RAILS_FORCE_SSL
+        value: "true"
+      - key: RAILS_ASSUME_SSL
+        value: "true"
+      - key: PORT
+        value: "3000"
+      - key: DB_HOST
+        fromDatabase:
+          name: sure-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: sure-db
+          property: port
+      - key: POSTGRES_USER
+        fromDatabase:
+          name: sure-db
+          property: user
+      - key: POSTGRES_PASSWORD
+        fromDatabase:
+          name: sure-db
+          property: password
+      - key: POSTGRES_DB
+        fromDatabase:
+          name: sure-db
+          property: database
+      - key: REDIS_URL
+        fromService:
+          type: keyvalue
+          name: sure-redis
+          property: connectionString
