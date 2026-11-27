@@ -40,6 +40,9 @@
 # Ignore CI service files.
 /.github
 
+# Ignore local instance backups (they contain database dumps and .env copies).
+/backups/
+
 # Ignore Docker-related files
 /.dockerignore
 /Dockerfile*
